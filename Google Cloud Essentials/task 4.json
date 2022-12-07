@@ -1,0 +1,75 @@
+Task 4: 
+
+Part 1:
+
+Cloud Natural Language:
+
+In cloud shell
+
+gcloud iam service-accounts create my-natlang-sa \
+  --display-name "my natural language service account"
+
+gcloud iam service-accounts keys create ~/key.json \
+  --iam-account my-natlang-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+
+export GOOGLE_APPLICATION_CREDENTIALS="/home/$USER/key.json"
+
+gcloud auth activate-service-account my-natlang-sa@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com --key-file=$GOOGLE_APPLICATION_CREDENTIALS
+
+gcloud ml language analyze-entities --content="Old Norse texts portray Odin as one-eyed and long-bearded, frequently wielding a spear named Gungnir and wearing a cloak and a broad hat." > result.json
+
+gcloud auth login 
+#You will receive one link in the URL. Open it, select the account and copy the Token and paste it on cloud shell
+gsutil cp result.json gs://$GOOGLE_CLOUD_PROJECT-marking/task4-cnl.result
+
+
+Cloud Speech:
+
+Create an API key and set API_KEY var in cloud shell
+
+Create the file request.json with:
+{
+  "config": {
+      "encoding":"FLAC",
+      "languageCode": "en-US"
+  },
+  "audio": {
+      "uri":"gs://cloud-training/gsp323/task4.flac"
+  }
+}
+
+curl -s -X POST -H "Content-Type: application/json" --data-binary @request.json \
+"https://speech.googleapis.com/v1/speech:recognize?key=${API_KEY}" > result.json
+
+gsutil cp result.json gs://YOUR_PROJECT-marking/task4-gcs.result
+
+
+Video Intelligence:
+
+gcloud iam service-accounts create quickstart
+
+gcloud iam service-accounts keys create key.json --iam-account quickstart@${GOOGLE_CLOUD_PROJECT}.iam.gserviceaccount.com
+
+gcloud auth activate-service-account --key-file key.json
+
+export ACCESS_TOKEN=$(gcloud auth print-access-token)
+
+Create a file called request.json with 
+{
+   "inputUri":"gs://spls/gsp154/video/train.mp4",
+   "features": [
+       "TEXT_DETECTION"
+   ]
+}
+
+curl -s -H 'Content-Type: application/json' \
+    -H "Authorization: Bearer $ACCESS_TOKEN" \
+    'https://videointelligence.googleapis.com/v1/videos:annotate' \
+    -d @request.json
+
+Wait for the operation to complete, check with 
+curl -s -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" 'https://videointelligence.googleapis.com/v1/projects/PROJECTS/locations/LOCATION/operations/OPERATION_FROM_PREVIOUS_REQUEST' > result1.json
+
+Either give quickstart SA the Storage Object Admin role or switch back to default QL SA
+
+gsutil cp result1.json gs://YOUR_PROJECT-marking/task4-gvi.result
